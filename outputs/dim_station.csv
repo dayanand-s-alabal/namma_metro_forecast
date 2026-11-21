@@ -1,0 +1,84 @@
+station_id,station_name,station_name_kn,station_code,line_name,is_interchange,is_terminus,opening_date,opening_date_basis,first_observed_date,is_active,source_aliases,ref_match
+STN001,Attiguppe,ಅತ್ತಿಗುಪ್ಪೆ,AGPP,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN002,Baiyappanahalli,ಬೈಯ್ಯಪ್ಪನಹಳ್ಳಿ,BYPH,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN003,Banashankari,ಬನಶಂಕರಿ,BNSK,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Banashankarl,matched
+STN004,Benniganahalli,ಬೆನ್ನಿಗಾನಹಳ್ಳಿ,JTPM,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN005,Challaghatta,ಚಲ್ಲಘಟ್ಟ,CLG,Purple,False,True,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN006,Chickpete,ಚಿಕ್ಕಪೇಟೆ,CHPK,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN007,Chikkabidarakallu,ಚಿಕ್ಕಬಿದರಕಲ್ಲು,JIDL,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN008,Cubbon Park,ಕಬ್ಬನ್ ಪಾರ್ಕ್,CBPK,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN009,Dasarahalli,ದಾಸರಹಳ್ಳಿ,DSH,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN010,Deepanjali Nagar,ದೀಪಾಂಜಲಿ ನಗರ,DJNR,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN011,Doddakallasandra,ದೊಡ್ಡಕಲ್ಲಸಂದ್ರ,KLPK,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN012,"Dr. B. R. Ambedkar Station, Vidhana Soudha","ಡಾ. ಬಿ. ಆರ್. ಅಂಬೇಡ್ಕರ್ ನಿಲ್ದಾಣ, ವಿಧಾನ ಸೌಧ",VDSA,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Vidhana Soudha,matched
+STN013,Garudacharpalya,ಗರುಡಾಚಾರ್‍‍ಪಾಳ್ಯ,GDCP,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN014,Goraguntepalya,ಗೊರಗುಂಟೆಪಾಳ್ಯ,YPI,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Yeshwanthpur Industry,matched
+STN015,Halasuru,ಹಲಸೂರು,HLRU,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN016,Hoodi,ಹೂಡಿ,DKIA,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN017,Hopefarm Channasandra,ಹೋಪ್ ಫಾರ್ಮ್ ಚನ್ನಸಂದ್ರ,UWVL,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN018,Indiranagar,ಇಂದಿರಾ ನಗರ,IDN,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN019,Jalahalli,ಜಾಲಹಳ್ಳಿ,JHLI,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN020,Jaya Prakash Nagar,ಜಯಪ್ರಕಾಶ ನಗರ,JPN,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,JP Nagar,matched
+STN021,Jayanagar,ಜಯನಗರ,JAYN,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN022,Jnanabharathi,ಜ್ಞಾನಭಾರತಿ,BGUC,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN023,Kadugodi Tree Park,ಕಾಡುಗೋಡಿ ಟ್ರೀ ಪಾರ್ಕ್,KDGD,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN024,Kengeri,ಕೆಂಗೇರಿ,KGIT,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN025,Kengeri Bus Terminal,ಕೆಂಗೇರಿ ಬಸ್ ಟರ್ಮಿನಲ್,MLSD,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN026,Konanakunte Cross,ಕೋಣನಕುಂಟೆ ಕ್ರಾಸ್,APRC,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN027,Krantivira Sangolli Rayanna Railway Station,ಕ್ರಾಂತಿವೀರ ಸಂಗೊಳ್ಳಿ ರಾಯಣ್ಣ ರೈಲು ನಿಲ್ದಾಣ,BRCS,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Bangalore City Station; KSR Railway Station,matched
+STN028,Krishna Rajendra Market,ಕೃಷ್ಣ ರಾಜೇಂದ್ರ ಮಾರುಕಟ್ಟೆ,KRMT,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,KR Market,matched
+STN029,Krishnarajapura,ಕೃಷ್ಣರಾಜಪುರ (ಕೆ. ಆರ್. ಪುರ),KRMA,Purple/Blue,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN030,Kundalahalli,ಕುಂದಲಹಳ್ಳಿ,KDNH,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN031,Lalbagh,ಲಾಲ್ ಬಾಗ್,LAGH,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN032,Madavara,ಮಾದಾವರ,BIET,Green,False,True,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN033,Magadi Road,ಮಾಗಡಿ ರಸ್ತೆ,MIRD,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN034,Mahakavi Kuvempu Road,ಮಹಾಕವಿ ಕುವೆಂಪು ರಸ್ತೆ,KVPR,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Kuvempu Road,matched
+STN035,Mahalakshmi,ಮಹಾಲಕ್ಷ್ಮೀ,MHLI,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN036,Mahatma Gandhi Road,ಮಹಾತ್ಮಾ ಗಾಂಧಿ ರಸ್ತೆ,MAGR,Purple/Pink,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,MG Road,matched
+STN037,Manjunathanagara,ಮಂಜುನಾಥನಗರ,MNJN,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Manjunatha Nagar,matched
+STN038,Mantri Square Sampige Road,"ಮಂತ್ರಿ ಸ್ಕ್ವೇರ್, ಸಂಪಿಗೆ ರಸ್ತೆ",SPGD,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN039,Mysore Road,ಮೈಸೂರು ರಸ್ತೆ,MYRD,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Mysuru Road,matched
+STN040,"Nadaprabhu Kempegowda Station, Majestic","ನಾಡಪ್ರಭು ಕೆಂಪೇಗೌಡ ನಿಲ್ದಾಣ, ಮೆಜೆಸ್ಟಿಕ್",KGWA,Purple/Green,True,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Kempegowda,matched
+STN041,Nagasandra,ನಾಗಸಂದ್ರ,NGSA,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN042,Nallurahalli,ನಲ್ಲೂರುಹಳ್ಳಿ,VDHP,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Nallur Halli,matched
+STN043,National College,ನ್ಯಾಷನಲ್ ಕಾಲೇಜ್,NLC,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN044,Pantharapalya - Nayandahalli,ಪಂತರಪಾಳ್ಯ - ನಾಯಂಡಹಳ್ಳಿ,NYHM,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Nayandahalli,matched
+STN045,Pattanagere,ಪಟ್ಟಣಗೆರೆ,PATC,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Pattangere,matched
+STN046,Pattandur Agrahara,ಪಟ್ಟಂದೂರು ಅಗ್ರಹಾರ,ITPL,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN047,Peenya,ಪೀಣ್ಯ,PEYA,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN048,Peenya Industry,ಪೀಣ್ಯ ಇಂಡಸ್ಟ್ರಿ,PYID,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN049,Rajajinagar,ರಾಜಾಜಿನಗರ,RJNR,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN050,Rajarajeshwari Nagar,ರಾಜರಾಜೇಶ್ವರಿ ನಗರ,RRRN,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN051,Rashtreeya Vidyalaya Road,ರಾಷ್ಟ್ರೀಯ ವಿದ್ಯಾಲಯ ರಸ್ತೆ,RVR,Green/Yellow,True,True,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,RV Road,matched
+STN052,Sandal Soap Factory,ಸ್ಯಾಂಡಲ್ ಸೋಪ್ ಫ್ಯಾಕ್ಟರಿ,SSFY,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN053,Seetharampalya,ಸೀತಾರಾಮಪಾಳ್ಯ,VWIA,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN054,Silk Institute,ರೇಷ್ಮೆ ಸಂಸ್ಥೆ,APTS,Green,False,True,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN055,Singayyanapalya,ಸಿಂಗಯ್ಯನಪಾಳ್ಯ,MDVP,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN056,"Sir M. Visvesvaraya Stn., Central College","ಸರ್ ಎಂ.ವಿಶ್ವೇಶ್ವರಯ್ಯ ನಿಲ್ದಾಣ , ಸೆಂಟ್ರಲ್ ಕಾಲೇಜು",VSWA,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Sir.M. Visveshwaraya,matched
+STN057,South End Circle,ಸೌತ್ ಎಂಡ್ ಸರ್ಕಲ್,SECE,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN058,"Sri Balagangadharanatha Swamiji Station, Hosahalli","ಶ್ರೀ ಬಾಲಗಂಗಾಧರನಾಥ ಸ್ವಾಮೀಜಿ ನಿಲ್ದಾಣ,ಹೊಸಹಳ್ಳಿ",HSLI,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Hosahalli,matched
+STN059,Sri Sathya Sai Hospital,ಶ್ರೀ ಸತ್ಯ ಸಾಯಿ ಆಸ್ಪತ್ರೆ,SSHP,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN060,Srirampura,ಶ್ರೀರಾಮ್‍ಪುರ,SPRU,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN061,Swami Vivekananda Road,ಸ್ವಾಮಿ ವಿವೇಕಾನಂದ ರಸ್ತೆ,SVRD,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,SV Road,matched
+STN062,Thalaghattapura,ತಲಘಟ್ಟಪುರ,TGTP,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Thalghattapura,matched
+STN063,Trinity,ಟ್ರಿನಿಟಿ,TTY,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN064,Vajarahalli,ವಾಜರಹಳ್ಳಿ,VJRH,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN065,Vijayanagar,ವಿಜಯನಗರ,VJN,Purple,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN066,Whitefield (Kadugodi),ವೈಟ್ ಫೀಲ್ಡ್ (ಕಾಡುಗೋಡಿ),WHTM,Purple,False,True,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,,matched
+STN067,Yelachenahalli,ಯಲಚೇನಹಳ್ಳಿ,PUTH,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Puttenahalli,matched
+STN068,Yeshwantpur,ಯಶವಂತಪುರ,YPM,Green,False,False,,open on/before 2025-08-01 (true opening date not in data),2025-08-01,True,Yeshwanthpur,matched
+STN069,Jayadeva Hospital,ಜಯದೇವ ಆಸ್ಪತ್ರೆ,JDHP,Yellow/Pink,True,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN070,Hongasandra,ಹೊಂಗಸಂದ್ರ,OFDC,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN071,Ragigudda,ರಾಗಿಗುಡ್ಡ,RGDT,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN072,Infosys Foundation Konappana Agrahara,ಇನ್ಫೋಸಿಸ್ ಫೌಂಡೇಷನ್ ಕೋನಪ್ಪನ ಅಗ್ರಹಾರ,ECTN,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN073,Kudlu Gate,ಕೂಡ್ಲು ಗೇಟ್,MSRN,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN074,Huskur Road,ಹುಸ್ಕೂರು ರಸ್ತೆ,HSKR,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN075,BTM Layout,ಬಿ ಟಿ ಎಂ ಬಡಾವಣೆ,BTML,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN076,Beratena Agrahara,ಬೆರಟೇನ ಅಗ್ರಹಾರ,HOSR,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN077,Biocon Hebbagodi,ಬಯೋಕಾನ್ ಹೆಬ್ಬಗೋಡಿ,HBGI,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN078,Bommanahalli,ಬೊಮ್ಮನಹಳ್ಳಿ,HSRL,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN079,Central Silk Board,ಕೇಂದ್ರ ರೇಷ್ಮೆ ಮಂಡಳಿ,SBJT,Yellow/Blue,True,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN080,Delta Electronics Bommasandra,ಡೆಲ್ಟಾ ಎಲೆಕ್ಟ್ರಾನಿಕ್ಸ್ ಬೊಮ್ಮಸಂದ್ರ,BMSD,Yellow,False,True,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN081,Electronic City,ಎಲೆಕ್ಟ್ರಾನಿಕ್ ಸಿಟಿ,ETCT,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN082,Hosa Road,ಹೊಸ ರಸ್ತೆ,BSRD,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched
+STN083,Singasandra,ಸಿಂಗಸಂದ್ರ,CKBR,Yellow,False,False,2025-08-11,first entries record in RTI data (opened inside the data window),2025-08-11,True,,matched

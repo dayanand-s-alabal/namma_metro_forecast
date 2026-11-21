@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-11-21 18:11:47",
+  "stage_seconds": {
+    "ingest": 0.18,
+    "validate_integrate": 0.72,
+    "eda": 0.19,
+    "network_tracker": 27.6,
+    "backtest_station": 73.67,
+    "evaluate_select": 0.17,
+    "forecast": 0.34,
+    "store": 7.96,
+    "report_dashboard": 0.87
+  },
+  "total_seconds": 111.7,
+  "selected_hourly": "trk_td",
+  "selected_daily": "trk_td",
+  "production_model": "trk_td",
+  "run_date": "2026-11-21",
+  "forecast_window": [
+    "2026-11-22",
+    "2026-11-28"
+  ],
+  "selected_tracker": "hw_h",
+  "checks": {
+    "station_sum": 0.0,
+    "network_sum": 0.0,
+    "daily_from_hourly": 7.275957614183426e-12,
+    "network_from_station": 3.4924596548080444e-10,
+    "leakage": {
+      "snaive_week": 0.0,
+      "ma_3wk": 0.0,
+      "xgb_hourly": 0.0,
+      "xgb_daily_td": 0.0,
+      "hw_td": 0.0,
+      "trk_td": 0.0
+    }
+  },
+  "env": {
+    "python": "3.13.5",
+    "pandas": "2.3.1",
+    "numpy": "2.3.2"
+  }
+}

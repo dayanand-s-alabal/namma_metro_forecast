@@ -1,0 +1,137 @@
+/* ------------------------------------------------------------ pages */
+const V=()=>$('#view');
+const redraw=[];            // chart redraw callbacks for resize / theme
+const reg=f=>{redraw.push(f);f()};
+const head=(t,p,right='')=>`<div class="pagehead"><div><h2>${t}</h2><p>${p}</p></div><div class="controls" style="margin:0">${right}</div></div>`;
+const scopeTag=(scope,gran,m)=>`<span class="badge acc">${scope}</span> <span class="badge acc">${gran}</span> <span class="badge">${MEAS[m].label} · ${gran.startsWith('Hourly')?'passengers per hour':'passengers per day'}</span>`;
+const histLabels=()=>D.dates.map(x=>x.d).concat(D.fdates.map(x=>x.d));
+const lastObsIdx=()=>{let i=ND-1;return i};
+const lastWeekDaily=(m,s)=>{ // same weekday in the 7 days before the forecast window (observed or model-filled): day index ND-7+k
+  const t=s==null?netTotI(m):DTI(m,s);return Array.from({length:7},(_,k)=>t[ND-7+k])};
+const rtNote=()=>{const r=D.meta.rt,f=x=>fdate(x,{day:'2-digit',month:'short',year:'numeric'});return `<b>Real-time window.</b> Run date <b>${f(r.run_date)}</b>; the forecast covers the next 7 days, <b>${f(r.fc_start)} – ${f(r.fc_end)}</b>. Station-hour data end on ${f(r.hourly_last)} (${r.stale_hourly_days} days before the window) and the tracker ends on ${f(r.tracker_last)}, so ${r.imp_counts.gap+r.imp_counts.extension+r.imp_counts.bridge} days of station history were <b>filled (imputed)</b>: ${r.imp_counts.gap} inside the observed range, ${r.imp_counts.extension} up to the tracker end and ${r.imp_counts.bridge} days of model estimate up to the run date. Imputed values are drawn dotted and never mixed with observations.`};
+const demandTag=(v,mean)=>v>mean*1.08?badge('High demand','warn'):v<mean*.92?badge('Low demand','good'):badge('Typical');
+/* ---------- 1. network overview */
+function pgOverview(){
+  const m=st.measure,tr=D.tracker;
+  const nt=netTot(m),fcn=fcNet(m),fq=D.fc[m].nq,fqd=D.fc[m].nqd,lw=lastWeekDaily(m,null);
+  const fd=fullDays(),wkAvg=(()=>{const a=[];nt.forEach((v,i)=>{if(fd[i]&&D.dates[i].dow<5)a.push(v)});return sum(a)/a.length})();
+  const pk=nt.reduce((b,v,i)=>v!=null&&fd[i]&&v>(nt[b]||0)?i:b,0), lo=nt.reduce((b,v,i)=>v!=null&&fd[i]&&v<(nt[b]??1e12)?i:b,0);
+  const trTot=tr.total,tfc=tr.fc.pred.slice(tr.fc.t0),trMean=sum(tfc)/7;
+  const lastTr=sum(tr.total.slice(-7));const ti=tr.fc.dates.map((d,i)=>i).filter(i=>i>=tr.fc.t0);const tfcT=ti.map(i=>tr.fc.pred[i]);
+  V().innerHTML=head('Network overview','Station-derived network totals come from summing 83 stations of the hourly RTI data. The tracker series is an independent all-ticket-modes daily total that runs to the present. Both are forecast for the next 7 days from the run date.',
+    seg('m-seg',[['entries','Entries'],['exits','Exits']],m))+`
+  <div class="kpis">
+    <div class="kpi"><div class="l">Hourly data ends</div><div class="v">${fdate(D.meta.hourly_last,{day:'2-digit',month:'short',year:'numeric'})}</div><div class="n">${D.dates.filter(x=>1).length&&nOpen().filter(v=>v>0).length} observed days · ${S} stations</div></div>
+    <div class="kpi"><div class="l">Tracker data ends</div><div class="v">${fdate(D.meta.tracker_last,{day:'2-digit',month:'short',year:'numeric'})}</div><div class="n">${tr.dates.length} observed days since ${fdate(D.meta.tracker_first,{month:'short',year:'numeric'})}</div></div>
+    <div class="kpi"><div class="l">Avg weekday ${MEAS[m].label.toLowerCase()} (stations)</div><div class="v">${short(wkAvg)}</div><div class="n">full-network days only</div></div>
+    <div class="kpi"><div class="l">Busiest / quietest day</div><div class="v" style="font-size:19px">${fdowdate(D.dates[pk].d)} · ${short(nt[pk])}</div><div class="n">quietest ${fdowdate(D.dates[lo].d)} · ${short(nt[lo])}</div></div>
+    <div class="kpi"><div class="l">Forecast week (stations)</div><div class="v">${short(sum(fcn))}</div><div class="n">${sgn((sum(fcn)/sum(lw)-1)*100)} vs previous 7 days (model-filled)</div></div>
+    <div class="kpi"><div class="l">Forecast week (tracker)</div><div class="v">${short(sum(tfc))}</div><div class="n">${sgn((sum(tfc)/lastTr-1)*100)} vs last 7 tracker days*</div></div>
+  </div>
+  <div class="grid">
+   <section class="panel c12"><div class="note">${rtNote()}</div></section>
+   <section class="panel c12"><div class="controls" style="justify-content:space-between"><div><h3>Network daily ridership: history and 7-day forecast</h3><p class="sub" id="ov-sub"></p></div>${seg('v-seg',[['st','Station-derived (hourly data)'],['tr','Tracker (all ticket modes)']],st.ov||'st')}</div><div id="ov-leg"></div><div class="chart" id="ov-chart"></div></section>
+   <section class="panel c7"><h3>Next 7 days: station-derived network ${MEAS[m].label.toLowerCase()}</h3><p class="sub">${scopeTag('Network','Daily',m)} · data cut-off ${fdate(D.meta.origin,{day:'2-digit',month:'short',year:'numeric'})} · sum of station-day forecasts</p><div id="ov-tab"></div></section>
+   <section class="panel c5"><h3>Next 7 days: tracker total</h3><p class="sub"><span class="badge acc">Network</span> <span class="badge acc">Daily</span> <span class="badge">All ticket modes · model ${esc(D.meta.sel.tracker_label)}</span></p><div id="ov-tab2"></div></section>
+   <section class="panel c12"><div class="note"><b>Reading this page.</b> The two series use different definitions: summed station entries equal about <b>${n0(D.recon_ratio*100)}%</b> of the tracker total on ${D.recon.overlap_days} overlapping days, so they are shown separately and compared only through that ratio (Data quality page). Entries and exits are never added together. The station-derived forecast is the tracker forecast scaled to stations (ratio, station shares and hour profiles learned from the observed days), so its level follows the tracker, not the old station data. *Tracker comparison uses the last 7 observed tracker days, which can include gaps.</div></section>
+   ${D.oos&&D.oos.length?`<section class="panel c12"><h3>Out-of-sample check</h3><p class="sub">Tracker totals that were published for forecast dates, compared with the station-derived forecast scaled by the ${n0(D.recon_ratio*100)}% ratio. Only a sanity check: ${D.oos.length} days, different definitions. Large misses fall on the Dasara holidays (1–2 Oct) and the days after them: the models have seen too few comparable holidays to anticipate the dip.</p><div id="ov-oos"></div></section>`:''}
+  </div>`;
+  bindSeg('m-seg',k=>{st.measure=k;render()});bindSeg('v-seg',k=>{st.ov=k;render()});
+  const view=st.ov||'st';
+  if(view==='st'){
+    const L=histLabels(),hist=nt.concat(Array(7).fill(null)),ni=netTotI(m),imp=netImp(m).concat(Array(7).fill(null)),f=Array(L.length).fill(null),bl=Array(L.length).fill(null),bh=Array(L.length).fill(null);
+    f[ND-1]=ni[ND-1];fcn.forEach((v,k)=>{f[ND+k]=v;bl[ND+k]=v*fqd[k][0];bh[ND+k]=v*fqd[k][1]});
+    $('#ov-sub').innerHTML=`${scopeTag('Network','Daily',m)} · station-derived · ${S} stations`;
+    $('#ov-leg').innerHTML=legend([{name:'Observed (sum of stations open that day)',color:MEAS[m].col},{name:'Imputed (filled from tracker)',color:MEAS[m].col,dash:'2 3'},{name:'Forecast',color:MEAS[m].col,dash:'6 4'},{name:'80% band',color:MEAS[m].col,box:1}]);
+    const yi=L.indexOf('2025-08-11');
+    reg(()=>lineChart($('#ov-chart'),{labels:L,series:[{name:'Observed',color:MEAS[m].col,vals:hist,dots:1,w:2},{name:'Imputed',color:MEAS[m].col,vals:imp,dash:'2 3',w:1.4},{name:'Forecast',color:MEAS[m].col,vals:f,dash:'6 4',band:[bl,bh],w:2.4}],
+      xFmt:l=>fdate(l),vlines:yi>=0?[{i:yi,label:'Yellow Line opens (+15 stations)'}]:[],shade:[[ND,L.length-1]],tipTitle:i=>fdowdate(L[i])+(i>=ND?' (forecast)':''),
+      tipExtra:i=>{const e=(i<ND?D.dates[i]:D.fdates[i-ND]);const t=evLabel(e);const n=i<ND?`<div style="color:var(--muted)">${D.dates[i].imp?'imputed (model-filled)':(nOpen()[i]||0)+' stations open'}</div>`:'';return (t?`<div style="color:var(--muted)">${esc(t)}</div>`:'')+n},aria:'Network daily ridership history and forecast'}));
+  }else{
+    const ds=tr.dates,start=new Date(ds[0]+'T00:00:00'),end=new Date(tr.fc.dates.at(-1)+'T00:00:00'),days=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1))days.push(d.toISOString().slice(0,10));
+    const idx={};ds.forEach((d,i)=>idx[d]=i);const rng=st.rng||'all';let from=0;if(rng!=='all')from=Math.max(0,days.length-7-(+rng));
+    const nF=tr.fc.dates.length,fillMap={};tr.filled.dates.forEach((d,i)=>fillMap[d]=tr.filled.vals[i]);
+    const L=days.slice(from),hist=L.map(d=>idx[d]!=null?tr.total[idx[d]]:null),fil=L.map(d=>idx[d]==null&&fillMap[d]!=null?fillMap[d]:null),f=L.map(d=>null),bl=L.map(()=>null),bh=L.map(()=>null);
+    let li=hist.length-nF-1;while(li>0&&hist[li]==null)li--;f[li]=hist[li];tr.fc.dates.forEach((d,k)=>{const j=L.indexOf(d);f[j]=tr.fc.pred[k];bl[j]=tr.fc.lo[k];bh[j]=tr.fc.hi[k]});
+    $('#ov-sub').innerHTML=`<span class="badge acc">Network</span> <span class="badge acc">Daily</span> <span class="badge">All ticket modes · passengers per day</span> ${seg('r-seg',[['all','All'],['365','Last 365 d'],['120','Last 120 d']],rng)}`;
+    $('#ov-leg').innerHTML=legend([{name:'Observed (gaps bridged by a straight line; dots = observed days)',color:'var(--s1)'},{name:'Filled days (seasonal)',color:'var(--s1)',dash:'2 3'},{name:'Forecast (incl. days since the last tracker date)',color:'var(--s1)',dash:'6 4'},{name:'80% band',color:'var(--s1)',box:1}]);
+    const hx=L.indexOf('2026-08-12');
+    reg(()=>lineChart($('#ov-chart'),{labels:L,series:[{name:'Observed',color:'var(--s1)',vals:hist,bridge:1,dots:L.length<400,w:1.6},{name:'Filled',color:'var(--s1)',vals:fil,dash:'2 3',w:1.2},{name:'Forecast',color:'var(--s1)',vals:f,dash:'6 4',band:[bl,bh],w:2.4}],xFmt:l=>fdate(l,{month:'short',year:'2-digit'}),
+      vlines:hx>=0?[{i:hx,label:'ONDC QR starts'}]:[],shade:[[L.length-nF,L.length-1]],tipTitle:i=>fdowdate(L[i]),tipExtra:i=>{const e=tr.events[L[i]]||(i>=L.length-nF?(D.fdates.find(x=>x.d===L[i])||{}).fest:'');return e?`<div style="color:var(--muted)">${esc(e)}</div>`:''},aria:'Tracker daily ridership'}));
+    bindSeg('r-seg',k=>{st.rng=k;render()});
+  }
+  const rows=D.fdates.map((x,k)=>({d:x.d,ev:evLabel(x),v:fcn[k],lo:fcn[k]*fqd[k][0],hi:fcn[k]*fqd[k][1],lw:lw[k],chg:lw[k]?(fcn[k]/lw[k]-1)*100:null}));
+  table($('#ov-tab'),[{k:'d',label:'Date',fmt:v=>fdowdate(v)},{k:'ev',label:'Calendar',html:r=>r.ev?`<span class="badge">${esc(r.ev)}</span>`:''},{k:'v',label:MEAS[m].label,num:1,fmt:v=>n0(v)},{k:'lo',label:'80% band',num:1,fmt:(v,r)=>n0(r.lo)+' – '+n0(r.hi)},{k:'chg',label:'vs wk before',num:1,fmt:v=>sgn(v)},{k:'t',label:'Demand',html:r=>demandTag(r.v,sum(fcn)/7)}],rows);
+  const trows=tr.fc.dates.map((d,k)=>({d,v:tr.fc.pred[k],lo:tr.fc.lo[k],hi:tr.fc.hi[k],ev:(D.fdates.find(x=>x.d===d)||{}).fest||tr.events[d]||''})).slice(tr.fc.t0);
+  table($('#ov-tab2'),[{k:'d',label:'Date',fmt:v=>fdowdate(v)},{k:'v',label:'Forecast',num:1,fmt:v=>n0(v)},{k:'lo',label:'80% band',num:1,fmt:(v,r)=>short(r.lo)+' – '+short(r.hi)},{k:'t',label:'Demand',html:r=>demandTag(r.v,trMean)}],trows);
+  if(D.oos&&D.oos.length)table($('#ov-oos'),[{k:'date',label:'Date',fmt:v=>fdowdate(v)},{k:'event',label:'Calendar'},{k:'forecast_station_entries',label:'Station forecast',num:1,fmt:n0},{k:'scaled_to_tracker',label:'Scaled to tracker',num:1,fmt:n0},{k:'tracker_actual',label:'Tracker actual',num:1,fmt:n0},{k:'error_pct',label:'Error',num:1,fmt:sgn}],D.oos);
+}
+/* ---------- 2. station analysis */
+function pgStations(){
+  const m=st.measure,all=stationStats(m);
+  const lines=[...new Set(ST.flatMap(s=>s.line.split('/')).filter(Boolean))];
+  V().innerHTML=head('Station analysis','Compare stations, open one to see its daily history and forecast, and check how much data each station has.',
+   seg('m-seg',[['entries','Entries'],['exits','Exits']],m)+`<label>Line <select id="line"><option value="all">All lines</option>${lines.map(l=>`<option ${st.line===l?'selected':''}>${l}</option>`).join('')}</select></label><input type="search" id="q" placeholder="Search station" value="${esc(st.q)}" aria-label="Search station">`)+`
+  <div class="grid">
+   <section class="panel c5"><h3>Busiest stations</h3><p class="sub">${scopeTag('Station','Daily',m)} · average per observed day · click a bar to select</p><div id="rank"></div></section>
+   <section class="panel c7"><div class="controls" style="justify-content:space-between"><div><h3 id="sd-title"></h3><p class="sub" id="sd-sub"></p></div>${stationSelect('sel',st.station)}<label>Compare with ${stationSelect('cmp',st.compare===''?-2:st.compare,'<option value="-2">none</option>')}</label></div><div id="sd-leg"></div><div class="chart" id="sd-chart"></div><dl class="kv" id="sd-kv" style="margin-top:8px"></dl></section>
+   <section class="panel c12"><h3>All stations</h3><p class="sub">Click a column to sort and a row to select. “Obs. days” is the number of days the station was open and observed (new stations have fewer).</p><div id="stab"></div></section>
+   ${D.od?`<section class="panel c6"><h3 id="od1"></h3><p class="sub">Optional exploratory view, ${D.od.dates[0]} to ${D.od.dates[1]} only (not used by the forecast)</p><div id="od-d"></div></section><section class="panel c6"><h3 id="od2"></h3><p class="sub">Where passengers arriving here came from</p><div id="od-o"></div></section>`:''}
+  </div>`;
+  bindSeg('m-seg',k=>{st.measure=k;render()});$('#line').onchange=e=>{st.line=e.target.value;render()};
+  $('#q').oninput=e=>{st.q=e.target.value;stTable()};
+  $('#sel').onchange=e=>{st.station=+e.target.value;render()};$('#cmp').onchange=e=>{st.compare=+e.target.value===-2?'':+e.target.value;render()};
+  const filt=()=>all.filter(r=>(st.line==='all'||r.line.split('/').includes(st.line))&&(!st.q||r.name.toLowerCase().includes(st.q.toLowerCase())));
+  const sel=ST[st.station],ss=all[st.station];
+  hbars($('#rank'),filt().sort((a,b)=>b.avg-a.avg).slice(0,15).map(r=>({label:r.name,v:r.avg,sel:r.i===st.station,onclick:()=>{st.station=r.i;render()},color:MEAS[m].col})),{});
+  function stTable(){table($('#stab'),[{k:'name',label:'Station'},{k:'line',label:'Line'},{k:'avg',label:'Avg / day',num:1,fmt:n0},{k:'avgWk',label:'Weekday',num:1,fmt:n0},{k:'avgWe',label:'Weekend',num:1,fmt:n0},{k:'peak',label:'Peak hour',num:1,fmt:v=>v==null?'–':hh(v)},{k:'days',label:'Obs. days',num:1,fmt:n0},{k:'fc7',label:'Forecast week',num:1,fmt:n0},{k:'chg',label:'vs last 7 d',num:1,fmt:sgn},{k:'flag',label:'Status',html:r=>r.flag==='OK'?badge('OK','good'):badge(r.flag==='RECENTLY_OPENED'?'New (Aug 2025)':'Limited history','warn')}],filt(),
+    {sortable:1,key:st.sortKey,dir:st.sortDir,onsort:(k,d)=>{st.sortKey=k;st.sortDir=d},maxh:460,onrow:r=>{st.station=r.i;render();window.scrollTo({top:0,behavior:'smooth'})},isSel:r=>r.i===st.station})}
+  stTable();
+  $('#sd-title').innerHTML=esc(sel.name);
+  $('#sd-sub').innerHTML=`${scopeTag('Station','Daily',m)} ${sel.line?badge(sel.line):''} ${sel.ich?badge('Interchange','acc'):''} ${sel.flag!=='OK'?badge(sel.flag==='RECENTLY_OPENED'?'Opened '+sel.open:'Limited history','warn'):''}`;
+  const L=histLabels(),t=DT(m,st.station),fcs=fcDaily(m,st.station),q=D.fc[m].dq;
+  const ti_=DTI(m,st.station),imp_=IMP(m,st.station).concat(Array(7).fill(null)),f=Array(L.length).fill(null),bl=f.slice(),bh=f.slice();f[ND-1]=ti_[ND-1];fcs.forEach((v,k)=>{f[ND+k]=v;bl[ND+k]=v*q[0];bh[ND+k]=v*q[1]});
+  const series=[{name:sel.name+' (observed)',color:MEAS[m].col,vals:t.concat(Array(7).fill(null)),dots:1},{name:'Imputed',color:MEAS[m].col,vals:imp_,dash:'2 3',w:1.4},{name:'Forecast',color:MEAS[m].col,vals:f,dash:'6 4',band:[bl,bh]}];
+  if(st.compare!==''){const c=DT(m,st.compare);series.push({name:ST[st.compare].name,color:'var(--s3)',vals:c.concat(Array(7).fill(null)),w:1.8})}
+  $('#sd-leg').innerHTML=legend(series.map(s=>({name:s.name,color:s.color,dash:s.dash&&'x'})).concat([{name:'80% band',color:MEAS[m].col,box:1}]));
+  reg(()=>lineChart($('#sd-chart'),{labels:L,series,xFmt:l=>fdate(l),shade:[[ND,L.length-1]],tipTitle:i=>fdowdate(L[i])+(i>=ND?' (forecast)':''),tipExtra:i=>{const e=evLabel(i<ND?D.dates[i]:D.fdates[i-ND]);return (e?`<div style="color:var(--muted)">${esc(e)}</div>`:'')+(i<ND&&D.dates[i].imp?'<div style="color:var(--muted)">imputed (model-filled)</div>':'')},aria:'Station daily trend'}));
+  $('#sd-kv').innerHTML=`<dt>Average weekday</dt><dd>${n0(ss.avgWk)}</dd><dt>Average weekend day</dt><dd>${n0(ss.avgWe)}</dd><dt>Weekday peak hour</dt><dd>${ss.peak==null?'–':hh(ss.peak)}</dd><dt>Forecast week total</dt><dd>${n0(ss.fc7)} (${sgn(ss.chg)} vs previous 7 days, model-filled)</dd><dt>Data coverage</dt><dd>${ss.days} observed days${sel.first?`, first service day ${sel.first}`:''}${sel.alias?` · old name: ${esc(sel.alias)}`:''}</dd>`;
+  if(D.od){const row=D.od.matrix[st.station],col=D.od.matrix.map(r=>r[st.station]);const top=(a,self)=>a.map((v,i)=>({i,v})).filter(x=>x.i!==self&&x.v>0).sort((x,y)=>y.v-x.v).slice(0,8);
+    $('#od1').textContent='Top destinations from '+sel.name;$('#od2').textContent='Top origins into '+sel.name;
+    hbars($('#od-d'),top(row,st.station).map(x=>({label:ST[x.i].name,v:x.v,color:'var(--s7)',onclick:()=>{st.station=x.i;render()}})));hbars($('#od-o'),top(col,st.station).map(x=>({label:ST[x.i].name,v:x.v,color:'var(--s7)',onclick:()=>{st.station=x.i;render()}})))}
+}
+/* ---------- 3. hourly demand profile */
+function pgHourly(){
+  const m=st.measure,s=st.hs??st.station,net=s===-1,sidx=net?null:s;
+  const obsDates=D.dates.map((x,i)=>i).filter(i=>net?nOpen()[i]>0:stat(s,i)===1);
+  if(st.day==null||!obsDates.includes(st.day))st.day=obsDates[obsDates.length-1];
+  V().innerHTML=head('Hourly demand profile','Hour-of-day and weekday patterns, peak hours, a single-day view and the 7-day hourly forecast for a station or the whole network.',
+    seg('m-seg',[['entries','Entries'],['exits','Exits']],m)+`<label>Scope <select id="hs"><option value="-1" ${net?'selected':''}>Whole network</option>${ST.map(x=>`<option value="${x.i}" ${x.i===s?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`)+`
+  <div class="grid">
+   <section class="panel c7"><h3>Average hourly profile by day type</h3><p class="sub">${scopeTag(net?'Network':'Station','Hourly',m)} · hour h = h:00–h+1:00 · complete observed days only</p><div id="pf-leg"></div><div class="chart" id="pf"></div></section>
+   <section class="panel c5"><h3>Peak-hour pattern</h3><p class="sub">Average ${MEAS[m].label.toLowerCase()} by weekday and hour</p><div id="hm"></div><div id="hm-leg"></div></section>
+   <section class="panel c7"><div class="controls" style="justify-content:space-between"><div><h3>Single day vs typical day</h3><p class="sub" id="dv-sub"></p></div><label>Date <select id="day">${obsDates.map(i=>`<option value="${i}" ${i===st.day?'selected':''}>${fdowdate(D.dates[i].d)}${evLabel(D.dates[i])?' · '+esc(evLabel(D.dates[i])):''}</option>`).join('')}</select></label></div><div id="dv-leg"></div><div class="chart" id="dv"></div></section>
+   <section class="panel c5"><h3>Peak hours</h3><p class="sub">Highest hours of the average weekday</p><div id="pk"></div></section>
+   <section class="panel c12"><div class="controls" style="justify-content:space-between"><div><h3>Unusual observations</h3><p class="sub">Days that deviate strongly from the same weekday elsewhere in the data. Calendar events are attached where known; a flag is not proof of error.</p></div>${seg('an-seg',[['station_day','Station-days'],['network_station_derived','Network (stations)'],['network_tracker','Network (tracker)']],st.an||'station_day')}</div><div id="an"></div></section>
+  </div>`;
+  bindSeg('m-seg',k=>{st.measure=k;render()});$('#hs').onchange=e=>{st.hs=+e.target.value;st.day=null;render()};$('#day').onchange=e=>{st.day=+e.target.value;render()};bindSeg('an-seg',k=>{st.an=k;render()});
+  const wd=profile(m,sidx,d=>d<5),sa=profile(m,sidx,d=>d===5),su=profile(m,sidx,d=>d===6);
+  const fa=net?fcNetH(m):fcHourly(m,s),fw=Array(24).fill(0);let nw=0;D.fdates.forEach((x,k)=>{if(x.dow<5){nw++;for(let h=0;h<24;h++)fw[h]+=fa[k*24+h]}});
+  const H=[...Array(24).keys()];
+  const ser=[{name:`Weekday (${wd.n} days)`,color:'var(--s1)',vals:wd.v},{name:`Saturday (${sa.n})`,color:'var(--s3)',vals:sa.v},{name:`Sunday (${su.n})`,color:'var(--s7)',vals:su.v},{name:'Forecast weekdays (avg)',color:'var(--s1)',vals:fw.map(v=>v/nw),dash:'5 4',w:1.8}];
+  $('#pf-leg').innerHTML=legend(ser.map(x=>({name:x.name,color:x.color,dash:x.dash})));
+  reg(()=>lineChart($('#pf'),{labels:H,series:ser,xFmt:hh,xgap:44,tipTitle:i=>hh(i)+'–'+hh((i+1)%24),aria:'hourly profile'}));
+  // heatmap dow x hour
+  const cell=[];let mxv=0;for(let dw=0;dw<7;dw++){const p=profile(m,sidx,d=>d===dw).v;cell.push(p);p.forEach(v=>{if(v>mxv)mxv=v})}
+  const drawHm=()=>{$('#hm').innerHTML=`<div class="heat pop" style="grid-template-columns:34px repeat(24,minmax(0,1fr))"><div class="rl"></div>${H.map(h=>`<div class="rl" style="justify-content:center;height:14px">${h%3===0?h:''}</div>`).join('')}${cell.map((r,dw)=>`<div class="rl">${DOWN[dw]}</div>`+r.map((v,h)=>`<div style="background:${v==null?'var(--surface2)':ramp(v/mxv)}" title="${DOWN[dw]} ${hh(h)}: ${v==null?'no data':n0(v)}"></div>`).join('')).join('')}</div>`;
+    $('#hm-leg').innerHTML=`<div class="legend" style="margin-top:8px;align-items:center"><span>low</span><span style="display:inline-block;width:120px;height:8px;border-radius:2px;background:linear-gradient(90deg,${[0,.25,.5,.75,1].map(ramp).join(',')})"></span><span>${n0(mxv)} per hour</span></div>`};reg(drawHm);
+  const top=H.map(h=>({h,v:wd.v[h]})).filter(x=>x.v!=null).sort((a,b)=>b.v-a.v).slice(0,6);
+  hbars($('#pk'),top.map(x=>({label:hh(x.h)+'–'+hh((x.h+1)%24),v:x.v,color:MEAS[m].col})));
+  // single day
+  const dd=st.day,act=H.map(h=>net?sum(ST.map(q=>hv(m,q.i,dd,h)||0)):hv(m,s,dd,h)),dw=D.dates[dd].dow,typ=profile(m,sidx,d=>d===dw).v;
+  $('#dv-sub').innerHTML=`${scopeTag(net?'Network':'Station','Hourly',m)} · typical = average of ${DOWN[dw]}s in the data`;
+  $('#dv-leg').innerHTML=legend([{name:fdowdate(D.dates[dd].d),color:MEAS[m].col},{name:'Typical '+DOWN[dw],color:'var(--muted)',dash:'5 4'}]);
+  reg(()=>lineChart($('#dv'),{labels:H,series:[{name:fdowdate(D.dates[dd].d),color:MEAS[m].col,vals:act},{name:'Typical '+DOWN[dw],color:'var(--muted)',vals:typ,dash:'5 4',w:1.6}],xFmt:hh,xgap:44,tipTitle:i=>hh(i)+'–'+hh((i+1)%24)}));
+  const A=D.anomalies[st.an||'station_day'];
+  table($('#an'),[{k:'date',label:'Date',fmt:fdowdate},{k:'scope',label:'Scope'},{k:'actual',label:'Actual',num:1,fmt:n0},{k:'expected',label:'Expected',num:1,fmt:n0},{k:'deviation_pct',label:'Deviation',num:1,html:r=>`<b style="color:${r.deviation_pct<0?'var(--crit)':'var(--warn)'}">${sgn(r.deviation_pct)}</b>`},{k:'event',label:'Calendar event',html:r=>r.event?badge(r.event):'<span style="color:var(--muted)">none known</span>'}],A,{maxh:340});
+}

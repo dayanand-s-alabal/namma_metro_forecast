@@ -1,0 +1,189 @@
+/* ---------- 4. seven-day forecast */
+function pgForecast(){
+  const m=st.measure,net=st.scope==='network',s=st.fs??st.station,gran=st.gran;
+  const fa=net?fcNetH(m):fcHourly(m,s),base=net?fcNetHBase(m):D.fc[m].base[s],fcd=net?fcNet(m):fcDaily(m,s),q=net?D.fc[m].nq:D.fc[m].dq,qk=k=>net?D.fc[m].nqd[k]:D.fc[m].dq,lw=lastWeekDaily(m,net?null:s);
+  const name=net?'All stations (sum)':ST[s].name;
+  V().innerHTML=head('Seven-day forecast',`168 hourly steps for ${fdate(D.meta.fc_dates[0])}–${fdate(D.meta.fc_dates[6],{day:'2-digit',month:'short',year:'numeric'})}, the 7 days after the run date (${fdate(D.meta.rt.run_date,{day:'2-digit',month:'short',year:'numeric'})}). Daily totals are the sum of the hours; network totals are the sum of stations. Hours 01–03 are outside service and fixed at 0.`,
+    seg('sc-seg',[['station','Station'],['network','Network']],st.scope)+seg('g-seg',[['hourly','Hourly (168 steps)'],['daily','Daily (7 days)']],gran)+seg('m-seg',[['entries','Entries'],['exits','Exits']],m)+(net?'':stationSelect('fs',s)))+`
+  <div class="grid">
+   <section class="panel c12"><h3>${esc(name)}</h3><p class="sub">${scopeTag(net?'Network (station-derived)':'Station',gran==='hourly'?'Hourly (168 steps)':'Daily (7 days)',m)} · model: ${esc(D.meta.sel.labels[D.meta.sel.hourly])}${D.meta.sel.hourly!==D.meta.sel.daily?` (totals reconciled to ${esc(D.meta.sel.labels[D.meta.sel.daily])})`:''}</p><div id="fl"></div><div class="chart" id="fc"></div>${net&&gran==='hourly'?'<p class="sub" style="margin-top:6px">No band is drawn for network hours: summing station bands would overstate the uncertainty.</p>':''}</section>
+   <section class="panel c12"><h3>Day by day</h3><p class="sub">${net?'Network':'Station'} daily ${MEAS[m].label.toLowerCase()} = sum of the 24 hourly forecasts</p><div id="dtab"></div><div class="dl" style="margin-top:10px"><button class="btn" id="dl1">Download CSV (this view)</button><button class="btn" id="cp1">Copy CSV</button></div></section>
+   <section class="panel c4"><h3>Watchlist: peak station-hours</h3><p class="sub">Highest forecast hours, one per station-day. Decision support only: nothing here changes service.</p><div id="wl1"></div></section>
+   <section class="panel c4"><h3>Watchlist: busiest stations</h3><p class="sub">Forecast week total, ${MEAS[m].label.toLowerCase()}</p><div id="wl2"></div></section>
+   <section class="panel c4"><h3>Watchlist: network days</h3><p class="sub">Highest and lowest forecast days, station-derived</p><div id="wl3"></div></section>
+   ${net?`<section class="panel c12"><h3>Tracker view: all ticket modes</h3><p class="sub"><span class="badge acc">Network</span> <span class="badge acc">Daily</span> <span class="badge">Independent series · model ${esc(D.meta.sel.tracker_label)} · ${fdate(D.meta.fc_dates[0])}–${fdate(D.meta.fc_dates[6],{day:'2-digit',month:'short',year:'numeric'})}</span></p><div class="chart" id="trc"></div></section>`:''}
+   <section class="panel c12"><h3>All stations: daily ${MEAS[m].label.toLowerCase()} forecast</h3><p class="sub">Sortable. Click a row to open that station.</p><div id="allt"></div></section>
+  </div>`;
+  bindSeg('sc-seg',k=>{st.scope=k;render()});bindSeg('g-seg',k=>{st.gran=k;render()});bindSeg('m-seg',k=>{st.measure=k;render()});if($('#fs'))$('#fs').onchange=e=>{st.fs=+e.target.value;st.station=st.fs;render()};
+  const FL=D.fdates;const hl=Array.from({length:168},(_,i)=>i);
+  if(gran==='hourly'){
+    const lo=net?null:D.fc[m].lo[s],hi=net?null:D.fc[m].hi[s];
+    $('#fl').innerHTML=legend([{name:'Forecast',color:MEAS[m].col},...(net?[]:[{name:'80% band',color:MEAS[m].col,box:1}]),{name:'Same hour last week (seasonal-naive baseline)',color:'var(--muted)',dash:'4 4'}]);
+    reg(()=>lineChart($('#fc'),{labels:hl,series:[{name:'Same hour last week',color:'var(--muted)',vals:base,dash:'4 4',w:1.4},{name:'Forecast',color:MEAS[m].col,vals:fa,band:net?null:[lo,hi],w:1.8}],xevery:24,xFmt:(l,i)=>fdowdate(FL[Math.floor(i/24)].d),tipTitle:i=>fdowdate(FL[Math.floor(i/24)].d)+' '+hh(i%24)+'–'+hh((i%24+1)%24),
+      tipExtra:i=>{const e=evLabel(FL[Math.floor(i/24)]);return e?`<div style="color:var(--muted)">${esc(e)}</div>`:''},xgap:90,aria:'168-hour forecast'}));
+  }else{
+    $('#fl').innerHTML=legend([{name:'Forecast (80% whisker)',color:MEAS[m].col,box:1},{name:'Same weekday last week (observed)',color:'var(--muted)',box:1}]);
+    reg(()=>colChart($('#fc'),{labels:FL.map(x=>fdowdate(x.d)),tips:FL.map(x=>fdowdate(x.d)+(evLabel(x)?' · '+evLabel(x):'')),series:[{name:'Same weekday last week',color:'var(--muted)',vals:lw,opacity:.55},{name:'Forecast',color:MEAS[m].col,vals:fcd,lo:fcd.map((v,k)=>v*qk(k)[0]),hi:fcd.map((v,k)=>v*qk(k)[1])}]}));
+  }
+  const rows=FL.map((x,k)=>{const sl=fa.slice(k*24,k*24+24),pk=sl.indexOf(Math.max(...sl));return {d:x.d,ev:evLabel(x),v:fcd[k],lo:fcd[k]*qk(k)[0],hi:fcd[k]*qk(k)[1],pkh:pk,pkv:sl[pk],chg:lw[k]?(fcd[k]/lw[k]-1)*100:null}});
+  table($('#dtab'),[{k:'d',label:'Date',fmt:fdowdate},{k:'ev',label:'Calendar',html:r=>r.ev?badge(r.ev):''},{k:'v',label:'Daily total',num:1,fmt:n0},{k:'lo',label:'80% band',num:1,fmt:(v,r)=>n0(r.lo)+' – '+n0(r.hi)},{k:'pkh',label:'Peak hour',num:1,fmt:v=>hh(v)},{k:'pkv',label:'Peak value',num:1,fmt:n0},{k:'chg',label:'vs last wk',num:1,fmt:sgn},{k:'t',label:'Demand',html:r=>demandTag(r.v,sum(fcd)/7)}],rows);
+  const csvOut=()=>csv(rows.map(r=>({scope:net?'network_station_derived':'station',station:name,measure:m,date:r.d,daily_forecast:Math.round(r.v),lower_80:Math.round(r.lo),upper_80:Math.round(r.hi),peak_hour:r.pkh,peak_value:Math.round(r.pkv),model:D.meta.sel.hourly})),['scope','station','measure','date','daily_forecast','lower_80','upper_80','peak_hour','peak_value','model']);
+  $('#dl1').onclick=()=>download(`forecast_${net?'network':ST[s].id}_${m}_daily.csv`,csvOut());$('#cp1').onclick=e=>copyText(csvOut(),e.target);
+  // watchlist
+  const all=[];for(let i=0;i<S;i++){const a=D.fc[m].pred[i];for(let j=0;j<168;j++)all.push([a[j],i,j])}all.sort((x,y)=>y[0]-x[0]);const seen=new Set(),topH=[];for(const x of all){const key=x[1]+'-'+Math.floor(x[2]/24);if(seen.has(key))continue;seen.add(key);topH.push(x);if(topH.length>=6)break}
+  const wk=ST.map(x=>({i:x.i,v:sum(fcDaily(m,x.i))})).sort((a,b)=>b.v-a.v).slice(0,6);const nd=fcNet(m);const dayRank=nd.map((v,k)=>({k,v})).sort((a,b)=>b.v-a.v);
+  $('#wl3').innerHTML=dayRank.map(x=>`<div class="brow" style="grid-template-columns:minmax(90px,40%) 1fr 70px;margin-bottom:5px"><div class="lab">${fdowdate(FL[x.k].d)}</div><div class="track"><div class="fill" style="width:${x.v/dayRank[0].v*100}%;background:${MEAS[m].col}"></div></div><div class="val">${short(x.v)}</div></div>`).join('')+`<p style="margin-top:8px">${badge('High','warn')} ${dayRank.slice(0,2).map(x=>fdowdate(FL[x.k].d)).join(', ')} &nbsp; ${badge('Low','good')} ${dayRank.slice(-2).reverse().map(x=>fdowdate(FL[x.k].d)).join(', ')}</p>`;
+  hbars($('#wl1'),topH.map(x=>({label:`${ST[x[1]].name} · ${fdowdate(FL[Math.floor(x[2]/24)].d)} ${hh(x[2]%24)}`,v:x[0],color:MEAS[m].col,onclick:()=>{st.scope='station';st.fs=x[1];st.station=x[1];render()}})));
+  hbars($('#wl2'),wk.map(x=>({label:ST[x.i].name,v:x.v,color:MEAS[m].col,onclick:()=>{st.scope='station';st.fs=x.i;st.station=x.i;render()}})));
+  if(net){const T=D.tracker.fc,a=T.t0;reg(()=>colChart($('#trc'),{labels:T.dates.slice(a).map(fdowdate),series:[{name:'Tracker forecast',color:'var(--s1)',vals:T.pred.slice(a),lo:T.lo.slice(a),hi:T.hi.slice(a)}]}))}
+  const rr=ST.map(x=>{const d=fcDaily(m,x.i),l=lastWeekDaily(m,x.i);const r={name:x.name,i:x.i,wk:sum(d),chg:sum(l.filter(v=>v!=null))?(sum(d)/sum(l)-1)*100:null};d.forEach((v,k)=>r['d'+k]=v);return r});
+  table($('#allt'),[{k:'name',label:'Station'},...FL.map((x,k)=>({k:'d'+k,label:fdowdate(x.d),num:1,fmt:n0})),{k:'wk',label:'Week',num:1,fmt:n0},{k:'chg',label:'vs last wk',num:1,fmt:sgn}],rr,{sortable:1,key:'wk',dir:-1,maxh:420,onrow:r=>{st.scope='station';st.fs=r.i;st.station=r.i;render();window.scrollTo({top:0,behavior:'smooth'})},isSel:r=>!net&&r.i===s});
+}
+/* ---------- 5. model performance */
+function pgModels(){
+  const lv=st.models,tracker=lv==='tracker',mm=st.mm||'entries',E=D.meta.evaluation,sel=D.meta.sel;
+  const titles={hourly:'Hourly target: station-hour',daily:'Daily target: station-day',network:'Daily target: network-day (sum of stations)',tracker:'Independent tracker series: daily network total'};
+  V().innerHTML=head('Model performance','Every candidate is scored on unseen data with rolling-origin validation. Hourly and daily targets are evaluated and ranked separately. Ranking uses mean WAPE across folds; MAPE ignores tiny actuals and reports how many were excluded.',
+    seg('lv-seg',[['hourly','Hourly'],['daily','Daily (station)'],['network','Network day'],['tracker','Tracker series']],lv)+(tracker?'':seg('mm-seg',[['entries','Entries'],['exits','Exits']],mm)))+`
+  <div class="grid">
+   <section class="panel c7"><h3>${titles[lv]}</h3><p class="sub" id="ms-sub"></p><div id="mb"></div></section>
+   <section class="panel c5"><h3>Selection and evaluation period</h3><dl class="kv" id="msel"></dl></section>
+   <section class="panel c12"><h3>Metrics</h3><p class="sub">MAE and RMSE in passengers; MAPE, WAPE, sMAPE in %. WAPE = Σ|error| ÷ Σ actual. sMAPE = mean of 2|error| ÷ (|actual|+|forecast|), 0 when both are 0.</p><div id="mt"></div></section>
+   <section class="panel c12"><div class="controls" style="justify-content:space-between"><div><h3>Forecast vs actual in the latest test window</h3><p class="sub" id="bt-sub"></p></div><div id="bt-ctl"></div></div><div id="bt-leg"></div><div class="chart" id="bt"></div></section>
+   <section class="panel c12"><h3>Fold-by-fold results</h3><p class="sub">Each fold trains only on days before its origin and is scored on the next 7 days.</p><div id="pf"></div></section>
+  </div>`;
+  bindSeg('lv-seg',k=>{st.models=k;render()});bindSeg('mm-seg',k=>{st.mm=k;render()});
+  let rows;
+  if(tracker){rows=D.tracker_metrics.map(r=>({...r,score:r.wape_fold_mean,vs:null,sel:r.model===sel.tracker}));const b=rows.find(r=>r.model==='snaive7');rows.forEach(r=>r.vs=b?(r.score/b.score-1)*100:null)}
+  else{const rank={};D.sel[lv].forEach(r=>rank[r.model]=r);rows=D.metrics[lv].filter(r=>r.measure===mm).map(r=>({...r,rank:rank[r.model]?rank[r.model].rank:null,score:r.wape_fold_mean,vs:rank[r.model]?rank[r.model].vs_seasonal_naive_pct:null,sel:r.model===(lv==='hourly'?sel.hourly:sel.daily)||(r.model==='pipeline')}));}
+  rows.sort((a,b)=>(a.rank??99)-(b.rank??99));
+  const key=tracker?sel.tracker:(lv==='hourly'?sel.hourly:sel.daily);
+  $('#ms-sub').innerHTML=`Mean fold WAPE (lower is better). ${badge('Selected','acc')} ${badge('Seasonal-naive baseline')}`;
+  hbars($('#mb'),rows.map(r=>({label:(r.model==='pipeline'?'► ':'')+(r.label||D.meta.sel.labels[r.model]),v:r.score,text:pct(r.score),color:r.model===key||r.model==='pipeline'?'var(--s1)':(r.model==='snaive_week'||r.model==='snaive7'?'var(--s4)':'var(--muted)'),title:r.label})));
+  const tw=E.test_windows;
+  $('#msel').innerHTML=tracker?`<dt>Selected model</dt><dd><b>${esc(sel.tracker_label)}</b></dd><dt>Baseline</dt><dd>Seasonal naive (same weekday last week)</dd><dt>Validation</dt><dd>${E.tracker_folds} weekly rolling origins from ${fdate(E.tracker_first_origin,{day:'2-digit',month:'short',year:'numeric'})} to the end of the data, each forecasting 7 days; only observed days are scored (gaps never scored)</dd><dt>Ranking</dt><dd>mean fold WAPE; <i>recent MAPE</i> covers the latest 8 folds</dd><dt>Caution</dt><dd>Recent folds include holidays, a growing NCMC share and ONDC QR (from 12 Aug 2026), so recent error is higher.</dd>`:
+   `<dt>Selected hourly model</dt><dd><b>${esc(sel.labels[sel.hourly])}</b></dd><dt>Selected daily model</dt><dd><b>${esc(sel.labels[sel.daily])}</b>${sel.hourly!==sel.daily?'<br><span style="color:var(--muted)">Hourly shape from the hourly model, rescaled so each station-day sums to the daily model (row “Selected pipeline”).</span>':''}</dd><dt>Baseline</dt><dd>Seasonal naive: same hour of the same weekday last week</dd><dt>Folds</dt><dd>${E.n_folds} rolling origins, 7-day test windows:<br>${tw.map((w,i)=>`${i+1}. train ≤ ${fdate(E.fold_origins[i])}, test ${fdate(w[0])}–${fdate(w[1])}`).join('<br>')}</dd><dt>Ranking</dt><dd>mean fold WAPE over entries and exits; fold spread and runtime shown as tie-breakers</dd><dt>MAPE target</dt><dd>${D.acceptance.performance.target}% is aspirational: pipeline hourly MAPE ${pct(D.acceptance.performance.hourly_mape_pipeline)}, network-day MAPE ${pct(D.acceptance.performance.network_daily_mape_pipeline)}. From ${E.n_folds} weeks only.</dd>${D.meta.sarima_skipped?'<dt>Note</dt><dd>SARIMA skipped in this run</dd>':''}`;
+  table($('#mt'),[{k:'rank',label:'#',num:1,fmt:v=>v??'–'},{k:'label',label:'Model',html:r=>`${r.model===key?'<b>':''}${esc(r.label)}${r.model===key?'</b> '+badge('selected','acc'):''}`},{k:'family',label:'Family'},{k:'MAE',label:'MAE',num:1,fmt:n1},{k:'RMSE',label:'RMSE',num:1,fmt:n1},{k:'MAPE',label:'MAPE',num:1,fmt:pct},{k:'n_mape_excluded',label:'MAPE excl.',num:1,fmt:n0},{k:'WAPE',label:'WAPE',num:1,fmt:pct},{k:'sMAPE',label:'sMAPE',num:1,fmt:pct},{k:'bias',label:'Bias',num:1,fmt:n1},{k:'wape_fold_std',label:'Fold σ',num:1,fmt:n2},{k:'runtime_s',label:'Runtime s',num:1,fmt:n1},{k:'vs',label:'vs baseline',num:1,fmt:sgn}].filter(c=>!(tracker&&c.k==='n_mape_excluded')),rows,{sortable:1,key:'rank',dir:1});
+  // backtest chart
+  if(tracker){
+    const b=D.tracker.bt.slice().sort((x,y)=>x.d<y.d?-1:1),L=b.map(x=>x.d);
+    $('#bt-sub').textContent=`Selected model, all ${E.tracker_folds} folds: each forecast date uses only data before its fold origin`;$('#bt-ctl').innerHTML='';
+    $('#bt-leg').innerHTML=legend([{name:'Actual (observed days)',color:'var(--fg)'},{name:'Forecast',color:'var(--s1)'}]);
+    reg(()=>lineChart($('#bt'),{labels:L,series:[{name:'Actual',color:'var(--fg)',vals:b.map(x=>x.a),dots:L.length<150,w:1.4,bridge:1},{name:'Forecast',color:'var(--s1)',vals:b.map(x=>x.p),w:1.8,bridge:1}],xFmt:l=>fdate(l,{month:'short',year:'2-digit'}),tipTitle:i=>fdowdate(L[i])+' · horizon '+b[i].h+' d'}));
+    table($('#pf'),[{k:'a',label:'Fold start',fmt:v=>v}],[],{});$('#pf').parentElement.hidden=true;
+  }else{
+    const bs=st.bs??-1;const o=D.bt;
+    $('#bt-sub').textContent=`Selected pipeline, test window ${fdate(o.dates[0])}–${fdate(o.dates[6])} (trained on data up to ${fdate(o.origin)}); ${MEAS[mm].label.toLowerCase()}, hourly`;
+    $('#bt-ctl').innerHTML=`<select id="bts" aria-label="Scope"><option value="-1" ${bs===-1?'selected':''}>Whole network</option>${ST.map(x=>`<option value="${x.i}" ${x.i===bs?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;$('#bts').onchange=e=>{st.bs=+e.target.value;render()};
+    const P=D.bt[mm].pred,A=D.bt[mm].act;let pv,av;
+    if(bs===-1){pv=Array(168).fill(0);av=Array(168).fill(0);for(let i=0;i<S;i++)for(let j=0;j<168;j++){pv[j]+=P[i][j];av[j]+=Math.max(A[i][j],0)}}else{pv=P[bs];av=A[bs].map(v=>v<0?null:v)}
+    $('#bt-leg').innerHTML=legend([{name:'Actual',color:'var(--fg)'},{name:'Forecast (made before the window)',color:MEAS[mm].col}]);
+    reg(()=>lineChart($('#bt'),{labels:Array.from({length:168},(_,i)=>i),series:[{name:'Actual',color:'var(--fg)',vals:av,w:1.5},{name:'Forecast',color:MEAS[mm].col,vals:pv,w:1.8}],xevery:24,xFmt:(l,i)=>fdowdate(o.dates[Math.floor(i/24)]),xgap:90,tipTitle:i=>fdowdate(o.dates[Math.floor(i/24)])+' '+hh(i%24)}));
+    const pf=D.per_fold[lv==='tracker'?'hourly':lv].filter(r=>r.measure===mm&&(r.model===key||r.model==='pipeline'||r.model==='snaive_week'));
+    table($('#pf'),[{k:'model',label:'Model',fmt:v=>D.meta.sel.labels[v]},{k:'fold',label:'Fold',num:1,fmt:v=>v+1},{k:'origin',label:'Train ends',fmt:fdate},{k:'MAE',label:'MAE',num:1,fmt:n1},{k:'RMSE',label:'RMSE',num:1,fmt:n1},{k:'MAPE',label:'MAPE',num:1,fmt:pct},{k:'WAPE',label:'WAPE',num:1,fmt:pct},{k:'sMAPE',label:'sMAPE',num:1,fmt:pct},{k:'n',label:'n',num:1,fmt:n0}],pf,{key:'model',dir:1});
+  }
+}
+/* ---------- 6. data quality & sources */
+function pgQuality(){
+  const dq=D.dq,tr=D.tracker,lagDays=Math.round((new Date(D.meta.tracker_last)-new Date(D.meta.hourly_last))/864e5);
+  const ic=D.meta.rt.imp_counts;
+  const trSpan=Math.round((new Date(tr.dates.at(-1))-new Date(tr.dates[0]))/864e5)+1,rec=D.recon;
+  V().innerHTML=head('Data quality and sources','Where the data come from, what is missing, what was masked or flagged, and how the station data compare with the independent tracker series.',
+    `<span class="chip">Pipeline run ${esc(D.meta.generated_at)}</span>`)+`
+  <div class="kpis">
+    <div class="kpi"><div class="l">Hourly freshness</div><div class="v">${D.meta.rt.stale_hourly_days} d</div><div class="n">hourly data end ${D.meta.rt.stale_hourly_days} days before the first forecast day</div></div>
+    <div class="kpi"><div class="l">Days imputed</div><div class="v">${n0(ic.gap+ic.extension+ic.bridge)}</div><div class="n">${ic.gap} inside the data · ${ic.extension} to tracker end · ${ic.bridge} to run date (flagged, never zero)</div></div>
+    <div class="kpi"><div class="l">Station-days not open</div><div class="v">${n0(dq.flag_counts.NOT_OPEN/24)}</div><div class="n">masked NOT_OPEN, kept as missing</div></div>
+    <div class="kpi"><div class="l">Suspect station-hours</div><div class="v">${n0(dq.flag_counts.SUSPECT_entries+dq.flag_counts.SUSPECT_exits)}</div><div class="n">flagged, never altered</div></div>
+    <div class="kpi"><div class="l">Tracker days missing</div><div class="v">${trSpan-tr.dates.length}</div><div class="n">of ${trSpan} calendar days</div></div>
+    <div class="kpi"><div class="l">Tracker QR total fixed</div><div class="v">${tr.qr_bad.reduce((a,b)=>a+b,0)}</div><div class="n">days where QR total ≠ sum of apps</div></div>
+  </div>
+  <div class="grid">
+   <section class="panel c12"><h3>Source coverage and provenance</h3><p class="sub">Raw files are never modified; SHA-256 identifies the exact file used.</p><div id="src"></div></section>
+   <section class="panel c12"><h3>Station × date coverage</h3><p class="sub">Each row is a station, each column a day. Hover for details.</p><div id="cl"></div><div class="chart" id="cov" style="margin-top:6px"></div></section>
+   <section class="panel c7"><h3>Station-data vs tracker reconciliation</h3><p class="sub">${rec.overlap_days} overlapping days. Station entries are about <b>${n0(rec.ratio_median_full_network*100)}%</b> of the tracker total (p10–p90 ${n0(rec.ratio_p10*100)}–${n0(rec.ratio_p90*100)}%) on complete-network days. Definitions differ (boardings by hour vs all ticket modes), so values are compared, not merged.</p><div id="rl"></div><div class="chart" id="rc"></div></section>
+   <section class="panel c5"><h3>Data flags</h3><p class="sub">Station-hour values by quality flag (entries + exits counted once per hour)</p><div id="fl"></div><h3 style="margin-top:14px;font-size:13px">Stations with most suspect hours</h3><div id="sus"></div></section>
+   <section class="panel c12"><h3>Gap filling (imputation)</h3><p class="sub">${esc(D.meta.rt.reason)}.</p><div class="note" style="margin-bottom:10px"><b>Method.</b> Station-hour value = tracker total for that day × station-derived/tracker ratio × station share × hour-of-day share. The tracker supplies the day's level (actual where published, seasonal fill for ${D.meta.rt.tracker_filled} missing tracker days, forecast after ${fdate(D.meta.rt.tracker_last)}); shares and profiles come from the last 35 observed days by day type (weekday, Saturday, Sunday/holiday). Missing values are never filled with zero, and every filled value carries the IMPUTED flag. Limits: shares and ratios are frozen at ${fdate(D.meta.rt.hourly_last)}; stations opened or re-timed since then are not seen, so station-level imputed values carry extra uncertainty (bands widened ×${D.meta.rt.inflation}).</div><p class="sub">Accuracy check: observed days were hidden, filled with the method and compared with what was observed (WAPE, lower is better).</p><div id="impv"></div></section>
+   <section class="panel c12"><h3>Cleaning and validation log</h3><div id="log"></div></section>
+   <section class="panel c12"><div class="controls" style="justify-content:space-between"><div><h3>Station mapping</h3><p class="sub">Canonical station dimension; source aliases and codes map to one identifier.</p></div><input type="search" id="mq" placeholder="Search station, code or old name" aria-label="Search mapping"></div><div id="map"></div></section>
+  </div>`;
+  table($('#impv'),[{k:'scenario',label:'Hidden block'},{k:'method',label:'Method'},{k:'measure',label:'Measure'},{k:'hourly_WAPE',label:'Station-hour WAPE %',num:1,fmt:n1},{k:'daily_WAPE',label:'Station-day WAPE %',num:1,fmt:n1},{k:'network_WAPE',label:'Network-day WAPE %',num:1,fmt:n1},{k:'network_bias_pct',label:'Network bias %',num:1,fmt:sgn}],D.meta.rt.imp_val);
+  table($('#src'),[{k:'source_id',label:'Source'},{k:'file',label:'File'},{k:'rows',label:'Rows',num:1,fmt:n0},{k:'date_min',label:'From'},{k:'date_max',label:'To'},{k:'definition',label:'Definition'},{k:'limitations',label:'Known limitations'},{k:'license',label:'Licence'},{k:'sha256',label:'SHA-256',fmt:v=>(v||'').slice(0,10)+'…'}],dq.prov);
+  // coverage canvas
+  $('#cl').innerHTML=legend([{name:'Observed',color:'var(--s1)',box:1},{name:'Station not yet open',color:'var(--s4)',box:1},{name:'Imputed (model-filled)',color:'var(--s2)',box:1},{name:'No hourly data for that date',color:'var(--hatch)',box:1}]).replace(/opacity:.3/g,'');
+  reg(()=>{const host=$('#cov'),W=host.clientWidth||700,cw=Math.max(4,Math.floor((W-150)/ND)),ch=Math.max(3,Math.min(7,Math.floor(560/S))),H=S*ch+22;host.innerHTML=`<canvas width="${W*2}" height="${H*2}" style="width:${W}px;height:${H}px"></canvas>`;const c=host.firstChild,x=c.getContext('2d');x.scale(2,2);const cs=getComputedStyle(document.documentElement),col={1:cs.getPropertyValue('--s1').trim(),2:cs.getPropertyValue('--s4').trim(),3:cs.getPropertyValue('--s2').trim(),0:cs.getPropertyValue('--hatch').trim()};
+    const fg=cs.getPropertyValue('--muted').trim();x.font='10px Inter, sans-serif';x.fillStyle=fg;
+    for(let s=0;s<S;s++){for(let d=0;d<ND;d++){x.fillStyle=col[stat(s,d)];x.globalAlpha=stat(s,d)===1?.9:stat(s,d)===3?.45:.8;x.fillRect(140+d*cw,s*ch,cw-1,ch-(ch>4?1:0))}x.globalAlpha=1;if(s%6===0||s===S-1){x.fillStyle=fg;x.fillText(ST[s].name.slice(0,22),2,s*ch+Math.min(ch,8))}}
+    x.fillStyle=fg;for(let d=0;d<ND;d+=7)x.fillText(fdate(D.dates[d].d),140+d*cw,H-6);
+    const t=tipEl(host);c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top,d=Math.floor((px-140)/cw),s=Math.floor(py/ch);if(d<0||d>=ND||s<0||s>=S){t.hidden=true;return}const k=stat(s,d);t.innerHTML=`<b>${esc(ST[s].name)}</b><div>${fdowdate(D.dates[d].d)}</div><div style="color:var(--muted)">${k===1?'observed':k===2?'not yet open (masked)':k===3?'imputed (model-filled)':'no data for this date'}</div>`;placeTip(host,t,px,py)});c.addEventListener('pointerleave',()=>t.hidden=true)});
+  // reconciliation
+  const R=rec.table,Lr=R.map(r=>r.date);$('#rl').innerHTML=legend([{name:'Station entries (sum of stations)',color:'var(--s1)'},{name:'Tracker total (all ticket modes)',color:'var(--s3)'}]);
+  reg(()=>lineChart($('#rc'),{labels:Lr,series:[{name:'Tracker total',color:'var(--s3)',vals:R.map(r=>r.tracker_total),dots:1},{name:'Station entries',color:'var(--s1)',vals:R.map(r=>r.station_entries),dots:1}],xFmt:fdate,tipTitle:i=>fdowdate(Lr[i]),tipExtra:i=>`<div style="color:var(--muted)">ratio ${n1(R[i].ratio*100)}% · ${R[i].n_stations} stations</div>`}));
+  const fcnt=dq.flag_counts;hbars($('#fl'),[{label:'Observed station-hours',v:fcnt.OBSERVED,color:'var(--s1)'},{label:'Not open (masked)',v:fcnt.NOT_OPEN,color:'var(--s4)'},{label:'Suspect entries',v:fcnt.SUSPECT_entries,color:'var(--s8)'},{label:'Suspect exits',v:fcnt.SUSPECT_exits,color:'var(--s8)'}].map(r=>({...r,text:n0(r.v)})));
+  hbars($('#sus'),Object.entries(dq.suspect_by_station).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>({label:k,v,color:'var(--s8)'})));
+  table($('#log'),[{k:'severity',label:'Level',html:r=>badge(r.severity,r.severity==='WARN'?'warn':r.severity==='ERROR'?'crit':'')},{k:'step',label:'Step'},{k:'scope',label:'Scope'},{k:'detail',label:'Finding'},{k:'n_records',label:'Records',num:1,fmt:n0},{k:'action',label:'Action taken'}],dq.log);
+  const mapRows=()=>ST.filter(s=>!$('#mq').value||(s.name+' '+s.code+' '+s.alias).toLowerCase().includes($('#mq').value.toLowerCase())).map(s=>({id:s.id,name:s.name,code:s.code,alias:s.alias,line:s.line,ich:s.ich?'Yes':'',open:s.open||('on/before '+D.meta.hourly_first),days:s.days,match:s.match}));
+  const dm=()=>table($('#map'),[{k:'id',label:'ID'},{k:'name',label:'Canonical name'},{k:'code',label:'Code'},{k:'alias',label:'Source alias (old name)'},{k:'line',label:'Line'},{k:'ich',label:'Interchange'},{k:'open',label:'Opening'},{k:'days',label:'Obs. days',num:1},{k:'match',label:'Reference match'}],mapRows(),{maxh:380});dm();$('#mq').oninput=dm;
+}
+/* ---------- 7. report & export */
+function pgReport(){
+  const ac=D.acceptance,E=D.meta.evaluation,sel=D.meta.sel;
+  const hourlyCsv=()=>{const out=['station_id,station,target_datetime,measure,predicted,lower_80,upper_80,horizon_step,is_operating_hour,model'];for(const m of ['entries','exits'])for(let i=0;i<S;i++)for(let j=0;j<168;j++){const k=Math.floor(j/24),h=j%24;out.push([ST[i].id,'"'+ST[i].name+'"',D.fdates[k].d+' '+hh(h),m,D.fc[m].pred[i][j],D.fc[m].lo[i][j],D.fc[m].hi[i][j],j+1,[1,2,3].includes(h)?0:1,sel.hourly].join(','))}return out.join('\n')};
+  const dailyCsv=()=>{const r=[];for(const m of ['entries','exits'])for(let i=0;i<S;i++){const d=fcDaily(m,i),q=D.fc[m].dq;d.forEach((v,k)=>r.push({station_id:ST[i].id,station:ST[i].name,measure:m,date:D.fdates[k].d,forecast:Math.round(v),lower_80:Math.round(v*q[0]),upper_80:Math.round(v*q[1])}))}return csv(r,['station_id','station','measure','date','forecast','lower_80','upper_80'])};
+  const netCsv=()=>{const r=[];for(const m of ['entries','exits']){const d=fcNet(m),q=D.fc[m].nqd;d.forEach((v,k)=>r.push({scope:'station_derived',measure:m,date:D.fdates[k].d,forecast:Math.round(v),lower_80:Math.round(v*q[k][0]),upper_80:Math.round(v*q[k][1])}))}const T=D.tracker.fc;T.dates.forEach((d,k)=>k<T.t0?0:r.push({scope:'tracker_all_ticket_modes',measure:'total',date:d,forecast:T.pred[k],lower_80:T.lo[k],upper_80:T.hi[k]}));return csv(r,['scope','measure','date','forecast','lower_80','upper_80'])};
+  const metCsv=()=>{const cols=['level','model','measure','MAE','RMSE','MAPE','WAPE','sMAPE','n','n_mape_excluded','wape_fold_mean','runtime_s'];const r=[];for(const l of ['hourly','daily','network'])D.metrics[l].forEach(x=>r.push({...x,level:l}));D.tracker_metrics.forEach(x=>r.push({...x,level:'tracker',measure:'total'}));return csv(r,cols)};
+  const dqCsv=()=>csv(D.dq.log,['severity','step','scope','detail','n_records','action']);
+  const srcCsv=()=>csv(D.dq.prov,['source_id','file','format','sha256','rows','date_min','date_max','dates','stations','url','downloaded','license','origin','definition','limitations']);
+  const limits=['Only '+nOpen().filter(v=>v>0).length+' days of station-hour history are observed (two blocks). Everything after '+D.meta.hourly_last+' is imputed from the tracker, so station shares, hour profiles and the station-derived/tracker ratio are '+D.meta.rt.stale_hourly_days+' days old. New stations, line changes and demand shifts since then are invisible at station level.','The Yellow Line opening on 11 Aug 2025 is a structural break; its 15 stations have under 8 weeks of history and are flagged.','The tracker ends on '+D.meta.rt.tracker_last+' ('+D.meta.rt.stale_tracker_days+' days before the first forecast day); the days in between are model estimates. The forecast window is always the 7 days after the run date ('+D.meta.rt.run_date+').','Holiday and event flags are keyword-classified from the supplied date list and need checking against the official Karnataka holiday list.','No weather data is available: weather columns are NULL and every model runs without them.','Station entries are about '+n0(D.recon_ratio*100)+'% of the tracker total; the series are never merged.',D.meta.rt.tracker_filled+' tracker days are missing and are filled seasonally inside the model fit only; they are never scored. QR totals are recomputed from the app columns.','Festivals, strikes, matches and disruptions are poorly predicted by lag-based models; prediction intervals are empirical and based on '+E.n_folds+' test weeks.','Forecasts support planning and trigger no operational action. Hourly data licence: ODbL / CC BY-NC-SA 4.0; check before non-academic use.'];
+  const assume=['Historical weekday and hour patterns carry information about the next 7 days.','Hour h means [h:00, h+1:00) local Bengaluru time; hour 23 runs to the last train.','Hours 01–03 are non-operating (over 99.9% zeros) and are forecast as 0.','A station is open from the first day with at least 10% of its median daily traffic; earlier values are trial runs and are masked.','Entries and exits are separate targets; daily = sum of hours; network = sum of stations.','Missing station-hours are never filled with zero; model-filled values are flagged IMPUTED and validated on hidden observed days.'];
+  const md=`# Assumptions and limitations\n\n## Assumptions\n${assume.map(x=>'- '+x).join('\n')}\n\n## Limitations\n${limits.map(x=>'- '+x).join('\n')}\n`;
+  const ex=[['forecast_station_hourly_7day.csv','Hourly station forecasts, entries and exits (168 steps × '+S+' stations)',hourlyCsv],['forecast_station_daily_7day.csv','Station-wise daily forecasts',dailyCsv],['forecast_network_daily_7day.csv','Network-wide daily forecasts: station-derived and tracker',netCsv],['model_metrics.csv','Hourly, daily, network-day and tracker metrics',metCsv],['data_quality_log.csv','Cleaning and validation log',dqCsv],['source_provenance.csv','Sources, coverage, licences, checksums',srcCsv],['assumptions_limitations.md','Assumptions and limitations',()=>md]];
+  V().innerHTML=head('Report and export','Everything needed to review or reuse the results: assumptions, limitations, acceptance status, runtimes and exportable tables.')+`
+  <div class="grid">
+   <section class="panel c7"><h3>Exports</h3><p class="sub">Download works in the standalone file. If a download is blocked in your viewer, use Copy. The full set (including the SQLite database and the Markdown project report) is in the <code>outputs/</code> folder produced by the pipeline.</p><div id="ex"></div></section>
+   <section class="panel c5"><h3>This run</h3><dl class="kv"><dt>Generated</dt><dd>${esc(D.meta.generated_at)}</dd><dt>Version</dt><dd>${esc(D.meta.version)}</dd><dt>Hourly forecast model</dt><dd>${esc(sel.labels[sel.hourly])}</dd><dt>Daily model</dt><dd>${esc(sel.labels[sel.daily])}</dd><dt>Tracker model</dt><dd>${esc(sel.tracker_label)}</dd><dt>Folds</dt><dd>${E.n_folds} × 7 days (hourly), ${E.tracker_folds} weekly (tracker)</dd><dt>Environment</dt><dd>Python ${esc(D.meta.env.python)}, pandas ${esc(D.meta.env.pandas)}, numpy ${esc(D.meta.env.numpy)}</dd><dt>Runtime (NFR-01)</dt><dd>${n1(sum(Object.values(D.meta.timer)))} s total</dd></dl><div id="rt" style="margin-top:8px"></div></section>
+   <section class="panel c6"><h3>Assumptions</h3><ul class="tight">${assume.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>
+   <section class="panel c6"><h3>Limitations and caveats</h3><ul class="tight">${limits.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>
+   <section class="panel c12"><h3>Acceptance criteria</h3><p class="sub">Evaluated by the pipeline on this run. Performance note: ${esc(ac.performance.note)}.</p><div id="ac"></div></section>
+   <section class="panel c12"><h3>Requirement traceability</h3><p class="sub">Stakeholder, functional and non-functional requirements of the SRS and where each is met.</p><div id="tr"></div></section>
+   <section class="panel c12"><div class="note warn"><b>Academic prototype.</b> This system is not an official BMRCL product and carries no BMRCL approval. Forecasts are estimates for planning discussion and do not control schedules, staffing or services.</div></section>
+  </div>`;
+  $('#ex').innerHTML=ex.map((e,i)=>`<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding:7px 0;flex-wrap:wrap"><div style="min-width:0"><b style="font-size:13px">${e[0]}</b><div style="color:var(--muted);font-size:12px">${esc(e[1])}</div></div><div class="dl"><button class="btn primary" data-dl="${i}">Download</button><button class="btn" data-cp="${i}">Copy</button></div></div>`).join('');
+  document.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{const e=ex[+b.dataset.dl];download(e[0],e[2](),e[0].endsWith('.md')?'text/markdown':'text/csv')});
+  document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>copyText(ex[+b.dataset.cp][2](),b));
+  table($('#rt'),[{k:'k',label:'Stage'},{k:'v',label:'Seconds',num:1,fmt:n1}],Object.entries(D.meta.timer).map(([k,v])=>({k,v})));
+  table($('#ac'),[{k:'id',label:'ID'},{k:'condition',label:'Condition'},{k:'status',label:'Status',html:r=>badge(r.status,r.status==='PASS'?'good':'warn')},{k:'evidence',label:'Evidence'}],ac.ac);
+  table($('#tr'),[{k:'id',label:'ID'},{k:'name',label:'Requirement'},{k:'where',label:'Where it is met'}],ac.trace,{maxh:420});
+}
+/* ------------------------------------------------------------ router */
+const PAGES=[['overview','Network overview','8.1',pgOverview],['stations','Station analysis','8.2',pgStations],['hourly','Hourly profile','8.3',pgHourly],['forecast','7-day forecast','8.4',pgForecast],['models','Model performance','8.5',pgModels],['quality','Data quality','8.6',pgQuality],['report','Report & export','8.7',pgReport]];
+function placeInk(){const t=document.querySelector('.tab[aria-selected="true"]'),k=$('#ink');if(!t||!k)return;k.style.left=t.offsetLeft+'px';k.style.width=t.offsetWidth+'px';window._ink={l:t.offsetLeft,w:t.offsetWidth}}
+function countUp(root){if(!motionOK())return;root.querySelectorAll('.kpi .v').forEach(el=>{const txt=el.textContent.trim(),m=txt.match(/^(\d[\d,]*\.?\d*)(\s?(?:k|M|%|d)?)$/);if(!m)return;const target=parseFloat(m[1].replace(/,/g,'')),dec=(m[1].split('.')[1]||'').length,comma=m[1].includes(',');if(!(target>0))return;const t0=performance.now(),D=900;
+    const f=now=>{const p=Math.min(1,(now-t0)/D),e=1-Math.pow(1-p,3),v=target*e;el.textContent=p>=1?txt:(comma?Math.round(v).toLocaleString('en-IN'):v.toFixed(dec))+m[2];if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)})}
+function render(){
+  ANIM=true;redraw.length=0;const p=PAGES.find(x=>x[0]===st.page)||PAGES[0];
+  $('#tabs').innerHTML=PAGES.map(x=>`<button class="tab" role="tab" id="t-${x[0]}" aria-selected="${x[0]===p[0]}" data-p="${x[0]}"><small>${x[2]}</small>${x[1]}</button>`).join('');
+  $('#tabs').insertAdjacentHTML('beforeend','<span class="ink" id="ink"></span>');
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{location.hash=b.dataset.p});
+  const ink=$('#ink');if(window._ink){ink.style.transition='none';ink.style.left=_ink.l+'px';ink.style.width=_ink.w+'px';ink.getBoundingClientRect();ink.style.transition=''}placeInk();
+  try{p[3]();countUp($('#view'))}finally{ANIM=false}
+  const t=$('#t-'+p[0]);t&&t.scrollIntoView({inline:'center',block:'nearest'});
+}
+function route(){const h=location.hash.slice(1);st.page=PAGES.some(x=>x[0]===h)?h:'overview';const v=$('#view');v.classList.remove('enter');void v.offsetWidth;v.classList.add('enter');render();window.scrollTo(0,0)}
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>redraw.forEach(f=>f()),120)});
+function themeBtn(){const b=document.createElement('button');b.className='btn';b.id='theme';b.setAttribute('aria-label','Toggle colour theme');const upd=()=>b.textContent=isDark()?'Light mode':'Dark mode';upd();
+  b.onclick=()=>{document.documentElement.dataset.theme=isDark()?'light':'dark';upd();redraw.length=0;render()};return b}
+async function boot(){
+  try{const txt=$('#data').textContent.trim();D=txt?JSON.parse(txt):await (await fetch('dashboard_data.json')).json()}
+  catch(e){$('#view').innerHTML='<div class="empty">Could not load the dashboard data. Run the pipeline to generate dashboard_data.json next to this page.</div>';return}
+  prep();
+  $('#sub').textContent=`run ${fdate(D.meta.rt.run_date,{day:'2-digit',month:'short',year:'numeric'})} · forecast ${fdate(D.meta.rt.fc_start,{day:'2-digit',month:'short'})} – ${fdate(D.meta.rt.fc_end,{day:'2-digit',month:'short',year:'numeric'})} · ${S} stations · station-hour data ${fdate(D.meta.hourly_first,{day:'2-digit',month:'short',year:'numeric'})} – ${fdate(D.meta.hourly_last,{day:'2-digit',month:'short',year:'numeric'})}`;
+  const c=$('#chips');c.innerHTML=`<span class="chip">Academic prototype · not an official BMRCL product</span>`;c.appendChild(themeBtn());
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(!document.documentElement.dataset.theme)render()});
+  {let css='';for(let k=2;k<=25;k++)css+=`.heat.pop>div:nth-child(25n+${k%25||25}){animation-delay:${(k-2)*16}ms}`;const el=document.createElement('style');el.textContent=css;document.head.appendChild(el)}
+  window.addEventListener('scroll',()=>{$('header.top').classList.toggle('scrolled',window.scrollY>4);if(window.scrollY<400)$('.hero').style.setProperty('--sy',window.scrollY)},{passive:true});
+  window.addEventListener('resize',placeInk);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(placeInk);
+  window.addEventListener('hashchange',route);route();
+}
+boot();
+</script>

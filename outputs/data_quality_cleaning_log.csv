@@ -1,0 +1,20 @@
+step,severity,scope,detail,n_records,action
+invalid_values,INFO,entries,"no negative, non-integer or non-numeric counts",0,none needed
+duplicates,INFO,entries,"no duplicate (date,hour,station) keys",0,none needed
+rows,INFO,entries,92280 raw rows -> 92280 clean rows,92280,
+invalid_values,INFO,exits,"no negative, non-integer or non-numeric counts",0,none needed
+duplicates,INFO,exits,"no duplicate (date,hour,station) keys",0,none needed
+rows,INFO,exits,95616 raw rows -> 95616 clean rows,95616,
+coverage,WARN,date,no hourly data for 2025-08-19 .. 2025-08-31 (13 days),25896,"left as MISSING_DATE (not zero-filled, not imputed for evaluation)"
+coverage,INFO,entries,every station-day present in the source has all 24 hour buckets,0,none needed
+coverage,INFO,exits,every station-day present in the source has all 24 hour buckets,0,none needed
+pre_opening,WARN,dimension,"15 stations (Yellow Line extension) enter service after 2025-08-01: Jayadeva Hospital 2025-08-11, Hongasandra 2025-08-11, Ragigudda 2025-08-11, Infosys Foundation Konappana Agrahara 2025-08-11, Kudlu Gate 2025-08-11, ...",3600,masked as NOT_OPEN (NaN); entries rows were absent and exits were zero-filled by the source - not treated as zero demand
+pre_opening,INFO,trial_runs,7 stations show tiny pre-service/trial traffic (269 passengers in total) before the commercial start,7,treated as trial-run: masked as NOT_OPEN (threshold 10% of the station's median daily traffic)
+suspect_values,INFO,entries,"166 station-hours deviate strongly from their own hour/day-type pattern (|robust z|>10, >300 pax)",166,"flagged SUSPECT, kept unchanged (may be genuine events)"
+suspect_values,INFO,exits,146 station-hours flagged SUSPECT,146,"flagged SUSPECT, kept unchanged"
+operating_hours,INFO,hours,"hours [1, 2, 3] are non-operating: positive counts entries=30, exits=3 station-hours",33,"forecast fixed at 0, flagged is_operating_hour=0"
+station_mapping,INFO,dimension,83 canonical stations; 83 matched to reference station dataset (line/interchange),83,
+tracker_qr,WARN,daily_tracker,'Total QR' disagrees with the sum of QR app columns on 218 of 495 days (100% of days Sep-2025..Jul-2026); max |diff|=260886,218,QR = sum of app columns (also the rule used in the tracker's processed file); original column kept as qr_total_raw
+tracker_gaps,WARN,daily_tracker,256 of 751 calendar days missing (2024-10-26..2026-11-15),256,kept missing; imputed ONLY inside model fitting (never scored)
+calendar,INFO,dim_calendar,"137 dated events classified into holiday / festival / event / disruption / observance; 8 observances (eclipses, solstices...) carry no demand flag",137,keyword classification; verify against the official Karnataka holiday list
+weather,INFO,weather,no verified date/hour-aligned weather source available in this environment (IMD/Open-Meteo unreachable),0,"rainfall_mm, temperature_c, humidity stored as NULL; baseline and all models run without them (FR-17)"

@@ -1,0 +1,33 @@
+{
+  "hourly": [
+    {"source_id": "HOURLY_ENTRIES_CLEANED", "measure": "entries", "path": "hourly/station-hourly-entries.csv", "format": "long_csv",
+     "url": "https://github.com/Vonter/bmrcl-ridership-hourly", "downloaded": "2026-11-17",
+     "license": "ODbL (Vonter repo); OpenCity lists CC BY-NC-SA 4.0 - check before non-academic use",
+     "origin": "RTI to BMRCL by Vivek Mathew; mirrored on OpenCity (data.opencity.in/dataset/bmrcl-station-wise-ridership-data)",
+     "definition": "Passengers boarded at the station per hour; start-of-hour bucket; 83 stations; 1-18 Aug and 1-30 Sep 2025",
+     "limitations": "Entries rows are absent (not zero) before a station opened; 19-31 Aug 2025 not covered by the RTI"},
+    {"source_id": "HOURLY_EXITS_CLEANED", "measure": "exits", "path": "hourly/station-hourly-exits.csv", "format": "long_csv",
+     "url": "https://github.com/Vonter/bmrcl-ridership-hourly", "downloaded": "2026-11-17",
+     "license": "ODbL (Vonter repo); OpenCity lists CC BY-NC-SA 4.0 - check before non-academic use",
+     "origin": "RTI to BMRCL by Vivek Mathew",
+     "definition": "Passengers alighted at the station per hour; zero-filled before station opening in this file",
+     "limitations": "Pre-opening zeros are NOT genuine observations; masked using entries-derived opening date"}
+  ],
+  "daily": [
+    {"source_id": "TRACKER_RAW", "path": "daily/NammaMetro_Ridership_Dataset.csv", "format": "tracker_raw",
+     "url": "https://github.com/thecont1/namma-metro-ridership-tracker", "downloaded": "2026-11-17",
+     "license": "see data/raw/daily/LICENSE_tracker_repo.txt",
+     "origin": "Daily BMRCL published figures by ticket mode",
+     "definition": "Daily network ridership = smart cards + tokens + NCMC + group tickets + QR (system-wide, all ticket modes)",
+     "limitations": "256 calendar days missing; QR total column inconsistent with app columns from Sep 2025 to Jul 2026 (app sum used)"}
+  ],
+  "reference": {
+    "stations_dataset": "reference/NammaMetro_Stations_Dataset.csv",
+    "station_codes": "reference/station-codes.csv",
+    "station_names": "reference/station-names.csv",
+    "significant_dates": "reference/significant_dates.csv"
+  },
+  "od": {"path": "od/stationpair-hourly-enhanced.csv", "format": "od_csv", "optional": true,
+         "definition": "Station-pair hourly trips 1-18 Aug 2025 with fare; exploratory only (not used for core forecasts)"},
+  "weather": []
+}
